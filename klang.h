@@ -95,7 +95,7 @@ namespace klang
     static constexpr Version version = {0, 7, 8, KLANG_DEBUG};
 
     /// Klang mode identifiers (e.g. averages, level following)
-    enum Mode
+    enum class Mode
     {
         Peak,
         RMS,
@@ -481,14 +481,14 @@ namespace klang
 
         /// Normalises values in the array to the specified @a target, based on peak, mean, or RMS value;
         void
-        normalise(float target = 1.f, int mode = Peak)
+        normalise(float target = 1.f, Mode mode = Mode::Peak)
         {
             if (!count)
             {
                 return;
             }
 
-            const float current = (mode == Peak) ? max() : (mode == Mean) ? mean() : rms();
+            const float current = (mode == Mode::Peak) ? max() : (mode == Mode::Mean) ? mean() : rms();
             const float scale   = current == 0.f ? 0.f : target / current;
             for (int i = 0; i < count; i++)
             {
@@ -2063,7 +2063,7 @@ namespace klang
     /// UI control / parameter
     struct Control
     {
-        enum Type
+        enum class Type
         {
             NONE,   // no control (list terminator)
             ROTARY, // rotary knob (dial/pot)
@@ -2116,19 +2116,19 @@ namespace klang
 
         typedef Array<Caption, 128> Options;
 
-        Caption name;        // name for control label / saved parameter
-        Type    type = NONE; // control type (see above)
+        Caption name;                       // name for control label / saved parameter
+        Type    type = Control::Type::NONE; // control type (see above)
 
-        float min;           // minimum control value (e.g. 0.0)
-        float max;           // maximum control value (e.g. 1.0)
-        float initial;       // initial value for control (e.g. 0.0)
+        float min;                          // minimum control value (e.g. 0.0)
+        float max;                          // maximum control value (e.g. 1.0)
+        float initial;                      // initial value for control (e.g. 0.0)
 
-        Size size;           // position (x,y) and size (height, width) of the control (use
-                             // AUTO_SIZE for automatic layout)
-        Options options;     // text options for menus and group buttons
+        Size size;                          // position (x,y) and size (height, width) of the control (use
+                                            // AUTO_SIZE for automatic layout)
+        Options options;                    // text options for menus and group buttons
 
-        signal value;        // current control value
-        signal smoothed;     // smoothed control value (filtered)
+        signal value;                       // current control value
+        signal smoothed;                    // smoothed control value (filtered)
 
         operator signal &()
         {
@@ -2413,25 +2413,26 @@ namespace klang
     inline static Control
     Dial(const char *name, float min = 0.f, float max = 1.f, float initial = 0.f, Control::Size size = Automatic)
     {
-        return {Caption::from(name), Control::ROTARY, min, max, initial, size, NoOptions, initial};
+        return {Caption::from(name), Control::Type::ROTARY, min, max, initial, size, NoOptions, initial};
     }
 
     inline static Control
     Button(const char *name, Control::Size size = Automatic)
     {
-        return {Caption::from(name), Control::BUTTON, 0, 1, 0.f, size, NoOptions, 0.f};
+        return {Caption::from(name), Control::Type::BUTTON, 0, 1, 0.f, size, NoOptions, 0.f};
     }
 
     inline static Control
     Toggle(const char *name, bool initial = false, Control::Size size = Automatic)
     {
-        return {Caption::from(name), Control::TOGGLE, 0, 1, initial ? 1.f : 0.f, size, NoOptions, initial ? 1.f : 0.f};
+        return {Caption::from(name), Control::Type::TOGGLE, 0, 1, initial ? 1.f : 0.f, size,
+                NoOptions,           initial ? 1.f : 0.f};
     }
 
     inline static Control
     Slider(const char *name, float min = 0.f, float max = 1.f, float initial = 0.f, Control::Size size = Automatic)
     {
-        return {Caption::from(name), Control::SLIDER, min, max, initial, size, NoOptions, initial};
+        return {Caption::from(name), Control::Type::SLIDER, min, max, initial, size, NoOptions, initial};
     }
 
     template <typename... Options>
@@ -2445,7 +2446,7 @@ namespace klang
         {
             menu.add(Caption::from(strings[p]));
         }
-        return {Caption::from(name), Control::MENU, 0, menu.size() - 1.f, 0, Automatic, menu, 0};
+        return {Caption::from(name), Control::Type::MENU, 0, menu.size() - 1.f, 0, Automatic, menu, 0};
     }
 
     template <typename... Options>
@@ -2459,25 +2460,25 @@ namespace klang
         {
             menu.add(Caption::from(strings[p]));
         }
-        return {Caption::from(name), Control::MENU, 0, menu.size() - 1.f, 0, size, menu, 0};
+        return {Caption::from(name), Control::Type::MENU, 0, menu.size() - 1.f, 0, size, menu, 0};
     }
 
     inline static Control
     Meter(const char *name, float min = 0.f, float max = 1.f, float initial = 0.f, Control::Size size = Automatic)
     {
-        return {Caption::from(name), Control::METER, min, max, initial, size, NoOptions, initial};
+        return {Caption::from(name), Control::Type::METER, min, max, initial, size, NoOptions, initial};
     }
 
     inline static Control
     PitchBend(Control::Size size = Automatic)
     {
-        return {{"PITCH\nBEND"}, Control::WHEEL, 0.f, 16384.f, 8192.f, size, NoOptions, 8192.f};
+        return {{"PITCH\nBEND"}, Control::Type::WHEEL, 0.f, 16384.f, 8192.f, size, NoOptions, 8192.f};
     }
 
     inline static Control
     ModWheel(Control::Size size = Automatic)
     {
-        return {{"MOD\nWHEEL"}, Control::WHEEL, 0.f, 127.f, 0.f, size, NoOptions, 0.f};
+        return {{"MOD\nWHEEL"}, Control::Type::WHEEL, 0.f, 127.f, 0.f, size, NoOptions, 0.f};
     }
 
     struct Group
@@ -2534,7 +2535,7 @@ namespace klang
         void
         operator=(const Controls &controls)
         {
-            for (int c = 0; c < 128 && controls[c].type != Control::NONE; c++)
+            for (int c = 0; c < 128 && controls[c].type != Control::Type::NONE; c++)
             {
                 operator+=(controls[c]);
             }
@@ -2557,7 +2558,7 @@ namespace klang
         }
 
         void
-        add(const char *name, Control::Type type = Control::ROTARY, float min = 0.f, float max = 1.f,
+        add(const char *name, Control::Type type = Control::Type::ROTARY, float min = 0.f, float max = 1.f,
             float initial = 0.f, Control::Size size = Automatic)
         {
             items[count].name    = name;
@@ -4677,13 +4678,13 @@ namespace klang
             {
             }
 
-            enum Content
+            enum class Content
             {
                 Empty  = 0,
                 Notes  = 1,
                 Effect = 2,
                 Synth  = 3,
-            } content = Empty;
+            } content = Content::Empty;
 
             bool active = false;
             int  used   = 0;
@@ -4770,7 +4771,7 @@ namespace klang
             {
                 // if (buffer) {
                 // debug.attach(buffer, size);
-                if (buffer.content != Buffer::Notes)
+                if (buffer.content != Buffer::Content::Notes)
                 {
                     buffer.clear(size);
                 }
@@ -5571,7 +5572,7 @@ namespace klang
         };
 
         /// Envelope stage
-        enum Stage
+        enum class Stage
         {
             Sustain,
             Release,
@@ -5579,7 +5580,7 @@ namespace klang
         };
 
         /// Envelope mode
-        enum Mode
+        enum class Mode
         {
             Time,
             Rate
@@ -5793,7 +5794,7 @@ namespace klang
         resetLoop()
         {
             loop.reset();
-            if (stage == Sustain && (point + 1) < points.size())
+            if (stage == Stage::Sustain && (point + 1) < points.size())
             {
                 setTarget(points[point + 1], points[point].x);
             }
@@ -5824,7 +5825,7 @@ namespace klang
         virtual void
         release(float time, float level = 0.f)
         {
-            stage = Release;
+            stage = Stage::Release;
             setTarget({time, level}, 0);
             // ramp->setTime(time);
             // ramp->setTarget(0.f);
@@ -5844,7 +5845,7 @@ namespace klang
             point   = 0;
             timeInc = 1.0f / fs;
             loop.reset();
-            stage = Sustain;
+            stage = Stage::Sustain;
             if (points.size())
             {
                 out = points[0].y;
@@ -5904,7 +5905,7 @@ namespace klang
 
             switch (stage)
             {
-            case Sustain:
+            case Stage::Sustain:
                 time += timeInc;
                 if (!ramp->isActive())
                 { // envelop segment end reached
@@ -5919,7 +5920,7 @@ namespace klang
                     }
                     else if ((point + 1) < points.size())
                     {
-                        if (mode() == Rate || time >= points[point + 1].x)
+                        if (mode() == Mode::Rate || time >= points[point + 1].x)
                         {                                    // reached target point
                             point++;
                             ramp->setValue(points[point].y); // make sure exact value is set
@@ -5932,17 +5933,17 @@ namespace klang
                     }
                     else
                     {
-                        stage = Off;
+                        stage = Stage::Off;
                     }
                 }
                 break;
-            case Release:
+            case Stage::Release:
                 if (!ramp->isActive()) // if(out == 0.0)
                 {
-                    stage = Off;
+                    stage = Stage::Off;
                 }
                 break;
-            case Off:
+            case Stage::Off:
                 break;
             }
         }
@@ -5965,7 +5966,7 @@ namespace klang
         void
         setMode(Mode mode)
         {
-            if (mode == Time)
+            if (mode == Mode::Time)
             {
                 setTargetFunction = &Envelope::setTargetTime;
             }
@@ -5978,7 +5979,7 @@ namespace klang
         Mode
         mode() const
         {
-            return setTargetFunction == &Envelope::setTargetTime ? Time : Rate;
+            return setTargetFunction == &Envelope::setTargetTime ? Mode::Time : Mode::Rate;
         }
 
       protected:
@@ -6026,11 +6027,11 @@ namespace klang
       public:
         param A, D, S, R;
 
-        enum Mode
+        enum class Mode
         {
             Time,
             Rate
-        } mode = Time;
+        } mode = Mode::Time;
 
         ADSR()
         {
@@ -6068,7 +6069,7 @@ namespace klang
     };
 
     /// FM operator
-    template <class OSCILLATOR>
+    template <typename OSCILLATOR>
     struct Operator : public OSCILLATOR, public Input
     {
         Envelope  env;
@@ -6132,7 +6133,7 @@ namespace klang
         }
     };
 
-    template <class OSCILLATOR>
+    template <typename OSCILLATOR>
     inline const signal &
     operator>>(klang::signal modulator, Operator<OSCILLATOR> &carrier)
     {
@@ -6209,7 +6210,7 @@ namespace klang
     };
 
     /// Base class for synthesiser notes
-    template <class SYNTH>
+    template <typename SYNTH>
     class NoteBase : public Controller
     {
         SYNTH *synth;
@@ -6254,7 +6255,7 @@ namespace klang
         virtual event
         off(Velocity v = 0)
         {
-            stage = Off;
+            stage = Stage::Off;
         }
 
         // SYNTH* getSynth() { return synth; }
@@ -6293,50 +6294,50 @@ namespace klang
         virtual void
         start(Pitch p, Velocity v)
         {
-            stage    = Onset;
+            stage    = Stage::Onset;
             pitch    = p;
             velocity = v;
             on(pitch, velocity);
-            stage = Sustain;
+            stage = Stage::Sustain;
         }
 
         virtual bool
         release(Velocity v = 0)
         {
-            if (stage == Off)
+            if (stage == Stage::Off)
             {
                 return true;
             }
 
-            if (stage != Release)
+            if (stage != Stage::Release)
             {
-                stage = Release;
+                stage = Stage::Release;
                 off(v);
             }
 
-            return stage == Off;
+            return stage == Stage::Off;
         }
 
         virtual bool
         stop(Velocity v = 0)
         {
-            stage = Off;
+            stage = Stage::Off;
             return true;
         }
 
         bool
         finished() const
         {
-            return stage == Off;
+            return stage == Stage::Off;
         }
 
-        enum Stage
+        enum class Stage
         {
             Onset,
             Sustain,
             Release,
             Off
-        } stage = Off;
+        } stage = Stage::Off;
 
         virtual void
         controlChange(int controller, int value)
@@ -6378,7 +6379,7 @@ namespace klang
     };
 
     /// Synthesiser note array
-    template <class SYNTH, class NOTE = Note>
+    template <typename SYNTH, typename NOTE = Note>
     struct Notes : Array<NOTE *, 128>
     {
         SYNTH *synth;
@@ -6398,7 +6399,7 @@ namespace klang
 
         virtual ~Notes();
 
-        template <class TYPE>
+        template <typename TYPE>
         void
         add(int count)
         {
@@ -6420,7 +6421,7 @@ namespace klang
             // favour unused voices
             for (unsigned int i = 0; i < count; i++)
             {
-                if (items[i]->stage == NOTE::Off)
+                if (items[i]->stage == NOTE::Stage::Off)
                 {
                     noteStart[i] = noteOns++;
                     return i;
@@ -6432,7 +6433,7 @@ namespace klang
             unsigned int oldest_start = 0;
             for (unsigned int i = 0; i < count; i++)
             {
-                if (items[i]->stage == NOTE::Release)
+                if (items[i]->stage == NOTE::Stage::Release)
                 {
                     if (oldest == -1 || noteStart[i] < oldest_start)
                     {
@@ -6500,7 +6501,7 @@ namespace klang
             control(index, value);
             for (unsigned int n = 0; n < notes.count; n++)
             {
-                if (notes[n]->stage != Note::Off)
+                if (notes[n]->stage != Note::Stage::Off)
                 {
                     notes[n]->onControl(index, value);
                 }
@@ -6514,7 +6515,7 @@ namespace klang
             onMIDI(status, byte1, byte2);
             for (unsigned int n = 0; n < notes.count; n++)
             {
-                if (notes[n]->stage != Note::Off)
+                if (notes[n]->stage != Note::Stage::Off)
                 {
                     notes[n]->onMIDI(status, byte1, byte2);
                 }
@@ -6528,7 +6529,7 @@ namespace klang
             preset(index);
             for (unsigned int n = 0; n < notes.count; n++)
             {
-                if (notes[n]->stage != Note::Off)
+                if (notes[n]->stage != Note::Stage::Off)
                 {
                     notes[n]->onPreset(index);
                 }
@@ -6552,7 +6553,7 @@ namespace klang
         {
             for (unsigned int n = 0; n < notes.count; n++)
             {
-                if (notes[n]->pitch == pitch && notes[n]->stage == Note::Sustain)
+                if (notes[n]->pitch == pitch && notes[n]->stage == Note::Stage::Sustain)
                 {
                     notes[n]->release(velocity);
                 }
@@ -6590,7 +6591,7 @@ namespace klang
             for (unsigned int n = 0; n < notes.count; n++)
             {
                 Note *note = notes[n];
-                if (note->stage != Note::Off)
+                if (note->stage != Note::Stage::Off)
                 {
                     if (!note->process(mono))
                     {
@@ -6613,7 +6614,7 @@ namespace klang
         }
     };
 
-    template <class SYNTH, class NOTE>
+    template <typename SYNTH, typename NOTE>
     inline Notes<SYNTH, NOTE>::~Notes()
     {
         for (unsigned int n = 0; n < count; n++)
@@ -7152,7 +7153,7 @@ namespace klang
         };
 
         /// Stereo audio object adapter
-        template <class TYPE>
+        template <typename TYPE>
         struct Bank : klang::Bank<TYPE, 2>
         {
         };
@@ -7381,7 +7382,7 @@ namespace klang
                 control(index, value);
                 for (unsigned int n = 0; n < notes.count; n++)
                 {
-                    if (notes[n]->stage != Note::Off)
+                    if (notes[n]->stage != Note::Stage::Off)
                     {
                         notes[n]->onControl(index, value);
                     }
@@ -7395,7 +7396,7 @@ namespace klang
                 onMIDI(status, byte1, byte2);
                 for (unsigned int n = 0; n < notes.count; n++)
                 {
-                    if (notes[n]->stage != Note::Off)
+                    if (notes[n]->stage != Note::Stage::Off)
                     {
                         notes[n]->onMIDI(status, byte1, byte2);
                     }
@@ -7409,7 +7410,7 @@ namespace klang
                 preset(index);
                 for (unsigned int n = 0; n < notes.count; n++)
                 {
-                    if (notes[n]->stage != Note::Off)
+                    if (notes[n]->stage != Note::Stage::Off)
                     {
                         notes[n]->onPreset(index);
                     }
@@ -7433,7 +7434,7 @@ namespace klang
             {
                 for (unsigned int n = 0; n < notes.count; n++)
                 {
-                    if (notes[n]->pitch == pitch && notes[n]->stage == Note::Sustain)
+                    if (notes[n]->pitch == pitch && notes[n]->stage == Note::Stage::Sustain)
                     {
                         notes[n]->release(velocity);
                     }
@@ -7473,7 +7474,7 @@ namespace klang
                 for (unsigned int n = 0; n < notes.count; n++)
                 {
                     Note *note = notes[n];
-                    if (note->stage != Note::Off)
+                    if (note->stage != Note::Stage::Off)
                     {
                         if (!note->process(buffer))
                         {
@@ -7849,7 +7850,7 @@ namespace klang
                 {
                 }
 
-                enum State
+                enum class State
                 { // carry:old_up:new_up
                     NewUp   = 0b001,
                     NewDown = 0b000,
@@ -7881,7 +7882,7 @@ namespace klang
                 void
                 init()
                 {
-                    state = (offset.position - increment.amount) < duty.position ? Up : Down;
+                    state = (offset.position - increment.amount) < duty.position ? State::Up : State::Down;
                     f     = delta;
                     omf   = 1.f - f;
                     rcpf2 = 2.f * (rcpf = 1.f / f);
@@ -7940,12 +7941,15 @@ namespace klang
                 tick()
                 {
                     // old_up = new_up, new_up = (cnt < brpt)
-                    state = (State)(((state << 1) | (offset.position < duty.position)) & (NewUp | OldUp));
+                    state = (State)(((static_cast<int>(state) << 1) | (offset.position < duty.position)) &
+                                    (static_cast<int>(State::NewUp) | static_cast<int>(State::OldUp)));
 
                     // we added freq to cnt going from the previous sample to the current one.
                     // so if cnt is less than freq, we carried.
                     const State transition =
-                        (State)(state | (offset.position < (unsigned int)increment.amount ? DownUpDown : Down));
+                        (State)(static_cast<int>(state) |
+                                (offset.position < increment.amount ? static_cast<int>(State::DownUpDown)
+                                                                    : static_cast<int>(State::Down)));
 
                     // finally, tick the oscillator
                     offset += increment;
@@ -7976,22 +7980,22 @@ namespace klang
                     // state machine action
                     switch (state)
                     {
-                    case Up:
+                    case State::Up:
                         return c1 * (p + p - f) + 1.f;
                         break; // average of linear function = just sample in the middle
-                    case Down:
+                    case State::Down:
                         return c2 * (p + p - f) + 1.f;
                         break; // again, average of a linear function
-                    case UpDown:
+                    case State::UpDown:
                         return rcpf * (c2 * sqr(p) - c1 * sqr(p - f)) + 1.f;
                         break;
-                    case DownUp:
+                    case State::DownUp:
                         return -rcpf * (1.f + c2 * sqr(p + omf) - c1 * sqr(p)) + 1.f;
                         break;
-                    case UpDownUp:
+                    case State::UpDownUp:
                         return -rcpf * (1.f + c1 * omf * (p + p + omf)) + 1.f;
                         break;
-                    case DownUpDown:
+                    case State::DownUpDown:
                         return -rcpf * (1.f + c2 * omf * (p + p + omf)) + 1.f;
                         break;
                     default:
@@ -8011,22 +8015,22 @@ namespace klang
                     // state machine action
                     switch (state)
                     {
-                    case Up:
+                    case State::Up:
                         return 1.f;
                         break;
-                    case Down:
+                    case State::Down:
                         return -1.f;
                         break;
-                    case UpDown:
+                    case State::UpDown:
                         return rcpf2 * (col - p) + 1.f;
                         break;
-                    case DownUp:
+                    case State::DownUp:
                         return rcpf2 * p - 1.f;
                         break;
-                    case UpDownUp:
+                    case State::UpDownUp:
                         return rcpf2 * (col - 1.0f) + 1.f;
                         break;
-                    case DownUpDown:
+                    case State::DownUpDown:
                         return rcpf2 * col - 1.f;
                         break;
                     default:
@@ -8547,7 +8551,7 @@ namespace klang
             /// Band-pass filter (BPF)
             struct BPF : Filter
             {
-                enum Gain
+                enum class Gain
                 {
                     ConstantSkirtGain, /// Constant Skirt Gain
                     ConstantPeakGain   /// Constant Peak Gain
@@ -8557,7 +8561,7 @@ namespace klang
                 BPF &
                 operator=(Gain gain)
                 {
-                    init_gain = gain == ConstantSkirtGain ? &BPF::init_skirt : &BPF::init_peak;
+                    init_gain = gain == Gain::ConstantSkirtGain ? &BPF::init_skirt : &BPF::init_peak;
                     init();
                     return *this;
                 }
@@ -8812,7 +8816,7 @@ namespace klang
         Follower &
         operator=(klang::Mode mode)
         {
-            _process = (mode == RMS) ? &Follower::rms : &Follower::peak;
+            _process = (mode == klang::Mode::RMS) ? &Follower::rms : &Follower::peak;
             return *this;
         }
 
@@ -8860,7 +8864,7 @@ namespace klang
             Window &
             operator=(klang::Mode mode)
             {
-                _process = (mode == RMS) ? &Window::rms : &Window::mean;
+                _process = (mode == klang::Mode::RMS) ? &Window::rms : &Window::mean;
                 return *this;
             }
 
