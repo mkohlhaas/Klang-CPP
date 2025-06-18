@@ -1,4 +1,8 @@
+# Begin of https://www.toptal.com/developers/gitignore/api/cmake,c++
+
 build/
+build-clang/
+build-gcc/
 .cache/
 
 ### C++ ###
@@ -53,5 +57,3 @@ CMakeUserPresets.json
 
 # External projects
 *-prefix/
-
-# End of https://www.toptal.com/developers/gitignore/api/cmake,c++
