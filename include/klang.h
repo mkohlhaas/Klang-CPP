@@ -35,6 +35,8 @@
 
 #define GRAPH_SERIES 4
 
+#define packed struct __attribute__((packed))
+
 // provide access to original math functions through `std::` prefix
 namespace std
 {
@@ -519,7 +521,7 @@ namespace klang
         Array() = default; // Default constructor to allow empty initialization
     };
 
-    struct Memory
+    packed Memory
     {
         typedef unsigned char Byte;
         typedef Byte         *Pointer;
@@ -544,8 +546,7 @@ namespace klang
         }
 
         // attach to an existing buffer
-        void
-        attach(unsigned char *data, size_t size, bool own = false)
+        void attach(unsigned char *data, size_t size, bool own = false)
         {
             Memory::size = size;
             start = ptr = data;
@@ -554,8 +555,7 @@ namespace klang
         }
 
         // detach from the buffer (without freeing it)
-        void
-        detach()
+        void detach()
         {
             start = ptr = end = nullptr;
             size              = 0;
@@ -563,8 +563,7 @@ namespace klang
         }
 
         // allocate memory
-        bool
-        create(size_t size)
+        bool create(size_t size)
         {
             free();
             start = ptr = new Byte[size];
@@ -579,36 +578,31 @@ namespace klang
         }
 
         // clear memory
-        void
-        clear()
+        void clear()
         {
             memset(start, 0, size);
         }
 
         // rewind memory to start
-        void
-        rewind()
+        void rewind()
         {
             ptr = start;
         }
 
         // rewind memory
-        void
-        rewind(int bytes)
+        void rewind(int bytes)
         {
             ptr -= bytes;
         }
 
         // skip / fastforward memory
-        void
-        skip(int bytes)
+        void skip(int bytes)
         {
             ptr += bytes;
         }
 
         // release memory
-        void
-        free()
+        void free()
         {
             if (owned && start)
             {
@@ -620,15 +614,13 @@ namespace klang
         }
 
         // check if pointer is at end of memory
-        bool
-        finished() const
+        bool finished() const
         {
             return ptr >= end;
         }
 
         // return memory-mapped file pointer
-        FILE *
-        file()
+        FILE *file()
         {
             FILE *f = fopen("/dev/null", "wt");
             if (!f)
@@ -639,8 +631,7 @@ namespace klang
             return f;
         }
 
-        bool
-        load(const char *path)
+        bool load(const char *path)
         {
             FILE *f = fopen(path, "rb");
             if (!f)
@@ -667,8 +658,7 @@ namespace klang
 
         // retrieve the next value from memory
         template <typename TYPE>
-        bool
-        get(TYPE &value)
+        bool get(TYPE & value)
         {
             if (ptr + sizeof(TYPE) > end)
             {
@@ -691,8 +681,7 @@ namespace klang
 
         // add a value to the memory
         template <typename TYPE>
-        bool
-        add(const TYPE &value)
+        bool add(const TYPE &value)
         {
             if (ptr + sizeof(TYPE) > end)
             {
@@ -705,8 +694,7 @@ namespace klang
 
         // add a value to the memory
         template <typename TYPE>
-        Memory &
-        operator+=(const TYPE &value)
+        Memory &operator+=(const TYPE &value)
         {
             add(value);
             return *this;
@@ -714,8 +702,7 @@ namespace klang
 
         // check if memory is equal to a value
         template <typename TYPE>
-        bool
-        operator==(const TYPE &value) const
+        bool operator==(const TYPE &value) const
         {
             if (ptr + sizeof(TYPE) > end)
             {
@@ -725,8 +712,7 @@ namespace klang
         }
 
         // copy memory from another memory object (with resize)
-        Memory &
-        operator=(const Memory &memory)
+        Memory &operator=(const Memory &memory)
         {
             if (ptr + memory.size > end)
             {
@@ -738,8 +724,7 @@ namespace klang
         }
 
         // attach memory to another memory object
-        Memory &
-        operator=(Memory *memory)
+        Memory &operator=(Memory *memory)
         {
             free();
             attach(memory->start, memory->size);
@@ -747,8 +732,7 @@ namespace klang
         }
 
         // add memory data from another memory object
-        Memory &
-        operator+=(const Memory &memory)
+        Memory &operator+=(const Memory &memory)
         {
             if (ptr + memory.size > end)
             {
@@ -1170,23 +1154,18 @@ namespace klang
     }
 
     /// A multi-channel audio signal (e.g. stereo).
+    // NOTE:make sure CHANNELS >= 2
     template <int CHANNELS = 2>
     struct signals
     {
-        union {
-            signal value[CHANNELS]; /// Array of channel values.
-            struct
-            {
-                signal l;           /// Left channel
-                signal r;           /// Right channel
-            };
-        };
+        /// array of channel values (e.g. for stereo, 0 = left, 1 = right).
+        signal value[CHANNELS];
 
         /// Return the mono mix of a stereo channel.
         signal
         mono() const
         {
-            return (l + r) * 0.5f;
+            return (value[0] + value[1]) * 0.5f;
         }
 
         /// Return a reference to the signal at the specified index (0 = left, 1 = right).
@@ -1204,33 +1183,45 @@ namespace klang
         }
 
         /// Create a stereo signal with the given value.
-        signals(float initial = 0.f) : l(initial), r(initial)
+        signals(float initial = 0.f)
         {
+            value[0] = initial;
+            value[1] = initial;
         }
 
         /// Create a stereo signal with the given value.
-        signals(double initial) : l(initial), r(initial)
+        signals(double initial)
         {
+            value[0] = initial;
+            value[1] = initial;
         }
 
         /// Create a stereo signal with the given value.
-        signals(int initial) : l(initial), r(initial)
+        signals(int initial)
         {
+            value[0] = initial;
+            value[1] = initial;
         }
 
         /// Create a stereo signal with the given left and right value.
-        signals(float left, float right) : l(left), r(right)
+        signals(float left, float right)
         {
+            value[0] = left;
+            value[1] = right;
         }
 
         /// Create a stereo signal with the given left and right value.
-        signals(double left, double right) : l(left), r(right)
+        signals(double left, double right)
         {
+            value[0] = left;
+            value[1] = right;
         }
 
         /// Create a stereo signal with the given left and right value.
-        signals(int left, int right) : l(left), r(right)
+        signals(int left, int right)
         {
+            value[0] = left;
+            value[1] = right;
         }
 
         /// Create a multi-channel signal with the given channel values.
@@ -6489,7 +6480,6 @@ namespace klang
         virtual event
         onMIDI(int status, int byte1, int byte2) override
         {
-            onMIDI(status, byte1, byte2);
             for (unsigned int n = 0; n < notes.count; n++)
             {
                 if (notes[n]->stage != Note::Stage::Off)
@@ -6628,7 +6618,7 @@ namespace klang
             {
             }
 
-            frame(stereo_signal &signal) : l(signal.l), r(signal.r)
+            frame(stereo_signal &signal) : l(signal.value[0]), r(signal.value[1])
             {
             }
 
@@ -6667,32 +6657,32 @@ namespace klang
             frame &
             operator+=(const stereo_signal x)
             {
-                l += x.l;
-                r += x.r;
+                l += x.value[0];
+                r += x.value[1];
                 return *this;
             }
 
             frame &
             operator-=(const stereo_signal x)
             {
-                l -= x.l;
-                r -= x.r;
+                l -= x.value[0];
+                r -= x.value[1];
                 return *this;
             }
 
             frame &
             operator*=(const stereo_signal x)
             {
-                l *= x.l;
-                r *= x.r;
+                l *= x.value[0];
+                r *= x.value[1];
                 return *this;
             }
 
             frame &
             operator/=(const stereo_signal x)
             {
-                l /= x.l;
-                r /= x.r;
+                l /= x.value[0];
+                r /= x.value[1];
                 return *this;
             }
 
@@ -6827,25 +6817,25 @@ namespace klang
             stereo_signal
             operator+(const stereo_signal x) const
             {
-                return {l + x.l, r + x.r};
+                return {l + x.value[0], r + x.value[1]};
             }
 
             stereo_signal
             operator-(const stereo_signal x) const
             {
-                return {l - x.l, r - x.r};
+                return {l - x.value[0], r - x.value[1]};
             }
 
             stereo_signal
             operator*(const stereo_signal x) const
             {
-                return {l * x.l, r * x.r};
+                return {l * x.value[0], r * x.value[1]};
             }
 
             stereo_signal
             operator/(const stereo_signal x) const
             {
-                return {l / x.l, r / x.r};
+                return {l / x.value[0], r / x.value[1]};
             }
 
             stereo_signal
@@ -6947,8 +6937,8 @@ namespace klang
             frame &
             operator=(const stereo_signal &signal)
             {
-                l = signal.l;
-                r = signal.r;
+                l = signal.value[0];
+                r = signal.value[1];
                 return *this;
             }
 
@@ -7042,7 +7032,7 @@ namespace klang
             frame
             operator=(const signal &in)
             {
-                return {left = in.l, right = in.r};
+                return {left = in.value[0], right = in.value[1]};
             }
 
             buffer &
@@ -7056,8 +7046,8 @@ namespace klang
             buffer &
             operator+=(const signal &in)
             {
-                left += in.l;
-                right += in.r;
+                left += in.value[0];
+                right += in.value[1];
                 return *this;
             }
 
@@ -7391,7 +7381,6 @@ namespace klang
             virtual event
             onMIDI(int status, int byte1, int byte2) override
             {
-                onMIDI(status, byte1, byte2);
                 for (unsigned int n = 0; n < notes.count; n++)
                 {
                     if (notes[n]->stage != Note::Stage::Off)
@@ -8900,8 +8889,6 @@ namespace klang
 
     struct File
     {
-#define packed struct __attribute__((packed))
-
         struct Format
         {
             unsigned int channels   = 0;
@@ -8911,7 +8898,7 @@ namespace klang
 
         packed Chunk
         {
-            struct ID
+            packed ID
             {
                 char id[4] = {0};
                 ID()       = default;
@@ -8920,18 +8907,17 @@ namespace klang
                 {
                 }
 
-                bool
-                operator==(ID const &id) const
+                bool operator==(ID const &id) const
                 {
                     return memcmp(ID::id, id.id, 4) == 0;
                 }
 
-                bool
-                operator==(char const *const id) const
+                bool operator==(char const *const id) const
                 {
                     return memcmp(ID::id, id, 4) == 0;
                 }
-            } id;
+            }
+            id;
 
             unsigned int size = 0;
 
