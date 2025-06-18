@@ -389,7 +389,7 @@ namespace klang
     }
 
     /// A function that handles an event.
-    typedef void event;
+    using event = void;
 
     /// Variable-sized array, pre-allocated to a max. capacity.
     template <typename TYPE, int CAPACITY>
@@ -523,8 +523,8 @@ namespace klang
 
     packed Memory
     {
-        typedef unsigned char Byte;
-        typedef Byte         *Pointer;
+        using Byte    = unsigned char;
+        using Pointer = Byte *;
 
         Pointer start, ptr, end;
         size_t  size;
@@ -687,6 +687,7 @@ namespace klang
             {
                 return false;
             }
+
             *(TYPE *)ptr = value;
             ptr += sizeof(TYPE);
             return true;
@@ -804,7 +805,7 @@ namespace klang
     };
 
     /// A short Text object used to label controls.
-    typedef Text<32> Caption;
+    using Caption = Text<32>;
 
     struct Output;
 
@@ -2039,7 +2040,7 @@ namespace klang
     THREAD_LOCAL inline Conversion Amplitude::dB;
 
     /// Control parameter (velocity)
-    typedef Amplitude Velocity;
+    using Velocity = Amplitude;
 
     /// UI control / parameter
     struct Control
@@ -2059,17 +2060,18 @@ namespace klang
         /// Control size
         struct Size
         {
-            Size(int x = -1, int y = -1, int width = -1, int height = -1) : x(x), y(y), width(width), height(height)
-            {
-            }
-
             int x;
             int y;
             int width;
             int height;
 
+            // defautl is AUTO_SIZE (all members are -1)
+            Size(int x = -1, int y = -1, int width = -1, int height = -1) : x(x), y(y), width(width), height(height)
+            {
+            }
+
             bool
-            isAuto() const
+            isAutoSize() const
             {
                 return x == -1 && y == -1 && width == -1 && height == -1;
             }
@@ -2096,7 +2098,7 @@ namespace klang
             }
         };
 
-        typedef Array<Caption, 128> Options;
+        using Options = Array<Caption, 128>;
 
         Caption name;                       // name for control label / saved parameter
         Type    type = Control::Type::NONE; // control type (see above)
@@ -2131,6 +2133,7 @@ namespace klang
         }
 
         static constexpr float smoothing = 0.999f;
+
         signal
         smooth()
         {
@@ -2150,7 +2153,7 @@ namespace klang
         }
 
         float
-        normalised() const
+        normalise() const
         {
             return range() ? (value.value - min) / range() : std::clamp(value.value, 0.f, 1.f);
         }
@@ -2576,7 +2579,7 @@ namespace klang
         }
     };
 
-    typedef Array<float, 128> Values;
+    using Values = Array<float, 128>;
 
     /// Factory preset
     struct Preset
@@ -4568,9 +4571,9 @@ namespace klang
     /// Debug text output
     struct Console : public Text<16384>
     {
-        static std::mutex               _lock;
-        THREAD_LOCAL static Text<16384> last;
-        int                             length = 0;
+        static std::mutex                      _lock;
+        inline THREAD_LOCAL static Text<16384> last;
+        int                                    length = 0;
 
         void
         clear()
@@ -4630,8 +4633,6 @@ namespace klang
             return _length;
         }
     };
-
-    inline THREAD_LOCAL Text<16384> Console::last;
 
 #define PROFILE(func, ...)                                                                                             \
     debug.print("%-16s = %fns\n", #func "(" #__VA_ARGS__ ")", debug.profile(1000, func, __VA_ARGS__));
@@ -4876,10 +4877,10 @@ namespace klang
     template <typename TYPE, int SIZE>
     struct Table : public Array<TYPE, SIZE>
     {
-        typedef Array<TYPE, SIZE> array;
-        typedef Result<TYPE>      result;
+        using Arr = Array<TYPE, SIZE>;
+        using Res = Result<TYPE>;
 
-        using array::add;
+        using Arr::add;
 
         // single argument
         Table(TYPE (*function)(TYPE))
@@ -4893,22 +4894,22 @@ namespace klang
         // double argument
         Table(void (*function)(TYPE, TYPE), TYPE arg)
         {
-            array::count = SIZE;
+            Arr::count = SIZE;
             for (int x = 0; x < SIZE; x++)
             {
-                array::items[x] = function(x, arg);
+                Arr::items[x] = function(x, arg);
             }
         }
 
         // single argument (enhanced)
-        Table(void (*function)(TYPE x, result &y))
+        Table(void (*function)(TYPE x, Res &y))
         {
-            array::count = SIZE;
-            result y(array::items, 0);
+            Arr::count = SIZE;
+            Res y(Arr::items, 0);
             for (int x = 0; x < SIZE; x++)
             {
                 function((TYPE)x, y);
-                y.sum += array::items[x];
+                y.sum += Arr::items[x];
                 y++;
             }
         }
@@ -4921,25 +4922,25 @@ namespace klang
             }
         }
 
-        using array::operator[];
+        using Arr::operator[];
         TYPE
         operator[](float index)
         {
             if (index < 0)
             {
-                return array::items[0];
+                return Arr::items[0];
             }
             else if (index >= (SIZE - 1))
             {
-                return array::items[SIZE - 1];
+                return Arr::items[SIZE - 1];
             }
             else
             {
                 const float x  = std::floor(index);
                 const int   i  = int(x);
                 const float dx = index - x;
-                const float dy = array::items[i + 1] - array::items[i];
-                return array::items[i] + dx * dy;
+                const float dy = Arr::items[i + 1] - Arr::items[i];
+                return Arr::items[i] + dx * dy;
             }
         }
     };
@@ -6354,10 +6355,10 @@ namespace klang
     {
         SYNTH *synth;
 
-        typedef Array<NOTE *, 128> array;
+        using Arr = Array<NOTE *, 128>;
 
-        using array::count;
-        using array::items;
+        using Arr::count;
+        using Arr::items;
 
         Notes(SYNTH *synth) : synth(synth)
         {
@@ -6377,7 +6378,7 @@ namespace klang
             {
                 TYPE *note = new TYPE();
                 note->attach(synth);
-                array::add(note);
+                Arr::add(note);
             }
         }
 
@@ -6606,7 +6607,7 @@ namespace klang
     namespace Stereo
     {
         /// Stereo audio signal
-        typedef signals<> stereo_signal;
+        using StereoSignal = signals<>;
 
         /// Stereo sample frame
         struct frame
@@ -6618,7 +6619,7 @@ namespace klang
             {
             }
 
-            frame(stereo_signal &signal) : l(signal.value[0]), r(signal.value[1])
+            frame(StereoSignal &signal) : l(signal.value[0]), r(signal.value[1])
             {
             }
 
@@ -6655,7 +6656,7 @@ namespace klang
             }
 
             frame &
-            operator+=(const stereo_signal x)
+            operator+=(const StereoSignal x)
             {
                 l += x.value[0];
                 r += x.value[1];
@@ -6663,7 +6664,7 @@ namespace klang
             }
 
             frame &
-            operator-=(const stereo_signal x)
+            operator-=(const StereoSignal x)
             {
                 l -= x.value[0];
                 r -= x.value[1];
@@ -6671,7 +6672,7 @@ namespace klang
             }
 
             frame &
-            operator*=(const stereo_signal x)
+            operator*=(const StereoSignal x)
             {
                 l *= x.value[0];
                 r *= x.value[1];
@@ -6679,7 +6680,7 @@ namespace klang
             }
 
             frame &
-            operator/=(const stereo_signal x)
+            operator/=(const StereoSignal x)
             {
                 l /= x.value[0];
                 r /= x.value[1];
@@ -6814,128 +6815,128 @@ namespace klang
                 return *this;
             }
 
-            stereo_signal
-            operator+(const stereo_signal x) const
+            StereoSignal
+            operator+(const StereoSignal x) const
             {
                 return {l + x.value[0], r + x.value[1]};
             }
 
-            stereo_signal
-            operator-(const stereo_signal x) const
+            StereoSignal
+            operator-(const StereoSignal x) const
             {
                 return {l - x.value[0], r - x.value[1]};
             }
 
-            stereo_signal
-            operator*(const stereo_signal x) const
+            StereoSignal
+            operator*(const StereoSignal x) const
             {
                 return {l * x.value[0], r * x.value[1]};
             }
 
-            stereo_signal
-            operator/(const stereo_signal x) const
+            StereoSignal
+            operator/(const StereoSignal x) const
             {
                 return {l / x.value[0], r / x.value[1]};
             }
 
-            stereo_signal
+            StereoSignal
             operator+(const mono::signal x) const
             {
                 return {l + x, r + x};
             }
 
-            stereo_signal
+            StereoSignal
             operator-(const mono::signal x) const
             {
                 return {l - x, r - x};
             }
 
-            stereo_signal
+            StereoSignal
             operator*(const mono::signal x) const
             {
                 return {l * x, r * x};
             }
 
-            stereo_signal
+            StereoSignal
             operator/(const mono::signal x) const
             {
                 return {l / x, r / x};
             }
 
-            stereo_signal
+            StereoSignal
             operator+(float x) const
             {
                 return {l + x, r + x};
             }
 
-            stereo_signal
+            StereoSignal
             operator-(float x) const
             {
                 return {l - x, r - x};
             }
 
-            stereo_signal
+            StereoSignal
             operator*(float x) const
             {
                 return {l * x, r * x};
             }
 
-            stereo_signal
+            StereoSignal
             operator/(float x) const
             {
                 return {l / x, r / x};
             }
 
-            stereo_signal
+            StereoSignal
             operator+(double x) const
             {
                 return {l + (float)x, r + (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator-(double x) const
             {
                 return {l - (float)x, r - (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator*(double x) const
             {
                 return {l * (float)x, r * (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator/(double x) const
             {
                 return {l / (float)x, r / (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator+(int x) const
             {
                 return {l + (float)x, r + (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator-(int x) const
             {
                 return {l - (float)x, r - (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator*(int x) const
             {
                 return {l * (float)x, r * (float)x};
             }
 
-            stereo_signal
+            StereoSignal
             operator/(int x) const
             {
                 return {l / (float)x, r / (float)x};
             }
 
             frame &
-            operator=(const stereo_signal &signal)
+            operator=(const StereoSignal &signal)
             {
                 l = signal.value[0];
                 r = signal.value[1];
@@ -6950,7 +6951,7 @@ namespace klang
         };
 
         /// Audio input object (stereo)
-        struct Input : Generic::Input<stereo_signal>
+        struct Input : Generic::Input<StereoSignal>
         {
             virtual ~Input()
             {
@@ -6958,7 +6959,7 @@ namespace klang
         };
 
         /// Audio output object (stereo)
-        struct Output : Generic::Output<stereo_signal>
+        struct Output : Generic::Output<StereoSignal>
         {
             virtual ~Output()
             {
@@ -6966,7 +6967,7 @@ namespace klang
         };
 
         /// Signal generator object (stereo output)
-        struct Generator : Generic::Generator<stereo_signal>
+        struct Generator : Generic::Generator<StereoSignal>
         {
             virtual ~Generator()
             {
@@ -6974,7 +6975,7 @@ namespace klang
         };
 
         /// Signal modifier object (stereo, input-output)
-        struct Modifier : Generic::Modifier<stereo_signal>
+        struct Modifier : Generic::Modifier<StereoSignal>
         {
             virtual ~Modifier()
             {
@@ -6982,7 +6983,7 @@ namespace klang
         };
 
         /// Audio oscillator object (stereo, output)
-        struct Oscillator : Generic::Oscillator<stereo_signal>
+        struct Oscillator : Generic::Oscillator<StereoSignal>
         {
             virtual ~Oscillator()
             {
@@ -6993,7 +6994,7 @@ namespace klang
         // interleaved access to non-interleaved stereo buffers
         struct buffer
         {
-            typedef Stereo::stereo_signal signal;
+            using Signal = Stereo::StereoSignal;
 
             mono::buffer &left, &right;
 
@@ -7007,7 +7008,7 @@ namespace klang
                 rewind();
             }
 
-            operator const signal() const
+            operator const Signal() const
             {
                 return {left, right};
             }
@@ -7030,7 +7031,7 @@ namespace klang
             }
 
             frame
-            operator=(const signal &in)
+            operator=(const Signal &in)
             {
                 return {left = in.value[0], right = in.value[1]};
             }
@@ -7044,7 +7045,7 @@ namespace klang
             }
 
             buffer &
-            operator+=(const signal &in)
+            operator+=(const Signal &in)
             {
                 left += in.value[0];
                 right += in.value[1];
@@ -7105,7 +7106,7 @@ namespace klang
                 return {left[index], right[index]};
             }
 
-            signal
+            Signal
             operator[](int index) const
             {
                 return {left[index], right[index]};
@@ -7166,7 +7167,7 @@ namespace klang
             {
             }
 
-            stereo_signal
+            StereoSignal
             tap(int delay) const
             {
                 int read = (items[0].position - 1) - delay;
@@ -7177,7 +7178,7 @@ namespace klang
                 return {items[0].buffer[read], items[1].buffer[read]};
             }
 
-            stereo_signal
+            StereoSignal
             tap(float delay) const
             {
                 float read = (float)(items[0].position - 1) - delay;
@@ -7203,7 +7204,7 @@ namespace klang
             }
 
             template <typename TIME>
-            stereo_signal
+            StereoSignal
             operator()(const TIME &delay)
             {
                 if constexpr (std::is_integral_v<TIME>)
@@ -7214,8 +7215,8 @@ namespace klang
                 {
                     return tap((float)delay);
                 }
-                else if constexpr (std::is_same_v<TIME, stereo_signal>) // stereo signal (use for
-                                                                        // l/r delay times)
+                else if constexpr (std::is_same_v<TIME, StereoSignal>) // stereo signal (use for
+                                                                       // l/r delay times)
                 {
                     return {items[0].tap(delay.l), items[1].tap(delay.r)};
                 }
@@ -7327,11 +7328,11 @@ namespace klang
         /// Synthesiser mini-plugin (stereo)
         struct Synth : public Effect
         {
-            typedef Stereo::Note Note;
+            using Note = Stereo::Note;
 
             struct Mono
             {
-                typedef Stereo::Mono::Note Note;
+                using Note = Stereo::Mono::Note;
             };
 
             /// Synthesiser note array (stereo)
@@ -8144,7 +8145,7 @@ namespace klang
             float z = 0;      // Filter state (last input)
 
             void
-            set_decay_factor(float r)
+            setDecayFactor(float r)
             {
                 this->r = r;
             }
@@ -8506,8 +8507,8 @@ namespace klang
                 }
             };
 
-            typedef LPF HCF; /// High-cut filter (HCF)
-            typedef LPF HRF; /// High-reject filter (HRF)
+            using HCF = LPF; /// High-cut filter (HCF)
+            using HRF = LPF; /// High-reject filter (HRF)
 
             /// High-pass filter (HPF)
             struct HPF : Filter
@@ -8528,8 +8529,8 @@ namespace klang
                 }
             };
 
-            typedef HPF LCF; /// Low-cut filter (LCF)
-            typedef HPF LRF; /// Low-reject filter (LRF)
+            using LCF = HPF; /// Low-cut filter (LCF)
+            using LRF = HPF; /// Low-reject filter (LRF)
 
             /// Band-pass filter (BPF)
             struct BPF : Filter
@@ -8600,7 +8601,7 @@ namespace klang
                 }
             };
 
-            typedef BRF BSF; /// Band-stop filter (BSF)
+            using BSF = BRF; /// Band-stop filter (BSF)
 
             /// All-pass filter (APF)
             struct APF : Filter
@@ -9079,30 +9080,27 @@ namespace klang
                 }
 
                 buffer.resize(data->size / format->BlockAlign);
-                if (format->AudioFormat == 1)
-                {                                           // PCM (integer)
-                    if (format->BitsPerSample == 8)
+
+                if (format->AudioFormat == 1)             // PCM (integer)
+                {
+                    if (format->BitsPerSample == 8)       // 8-bit (unsigned)
                     {
-                        decode<unsigned char>(buffer.data(), (unsigned char *)data->data,
-                                              buffer.size); // 8-bit (unsigned)
+                        decode<unsigned char>(buffer.data(), (unsigned char *)data->data, buffer.size);
                     }
-                    else if (format->BitsPerSample == 16)
+                    else if (format->BitsPerSample == 16) // 16-bit (signed)
                     {
-                        decode<signed short>(buffer.data(), (signed short *)data->data,
-                                             buffer.size); // 16-bit (signed)
+                        decode<signed short>(buffer.data(), (signed short *)data->data, buffer.size);
                     }
-                    else if (format->BitsPerSample == 32)
+                    else if (format->BitsPerSample == 32) // 32-bit (signed)
                     {
-                        decode<signed int>(buffer.data(), (signed int *)data->data,
-                                           buffer.size); // 32-bit (signed)
+                        decode<signed int>(buffer.data(), (signed int *)data->data, buffer.size);
                     }
                 }
                 else if (format->AudioFormat == 3)
                 {
-                    if (format->BitsPerSample == 32)
+                    if (format->BitsPerSample == 32) // 32-bit (float)
                     {
-                        decode<float>(buffer.data(), (float *)data->data,
-                                      buffer.size); // 32-bit (float)
+                        decode<float>(buffer.data(), (float *)data->data, buffer.size);
                     }
                 }
                 return true;
