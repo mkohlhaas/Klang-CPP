@@ -6,6 +6,8 @@ project(
   default_options: ['warning_level=3', 'cpp_std=c++20'],
 )
 
+# add_project_arguments('-fms-extensions', language: 'cpp')
+
 incdir = include_directories('../../../include')
 
 executable(
